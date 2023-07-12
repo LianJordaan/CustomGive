@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "template-mod",
+	"version": "${version}",
+	"name": "Custom Command Item Giver",
+	"description": "This mod will add a `/customgive` command that will give you a stone block with the NBT that is copied to your clipboard.",
+	"authors": [
+		"LianJordaan"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/template-mod/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"io.github.lianjordaan.ExampleMod"
+		],
+		"client": [
+			"io.github.lianjordaan.ExampleModClient"
+		]
+	},
+	"mixins": [
+		"template-mod.mixins.json",
+		{
+			"config": "template-mod.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.14.21",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}
