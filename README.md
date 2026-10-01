@@ -18,7 +18,7 @@ The clipboard must contain a valid compound and be no longer than 32,768 charact
 | --- | --- | --- | --- |
 | 1.20.1 | 17 | Item NBT | Build and unit tests pass; live client check pending |
 | 1.20.2 | 17 | Item NBT | Build and unit tests pass; live client check pending |
-| 1.21.11 | 21 | Data components | Build and unit tests pass; live client check pending |
+| 1.21.11 | 21 | Data components | Build, unit tests, and Creative/relog/Survival client-server checks pass |
 | 26.2 | 25 | Data components | Build and unit tests pass; live client check pending |
 | 26.3 | 25 | Data components | Build and unit tests pass; live client check pending |
 
@@ -27,3 +27,5 @@ The pinned Fabric API, mappings, Java level, and source track for each target li
 Build on JDK 25 with `./gradlew build` (or `gradlew.bat build` on Windows). The deployable JARs are in `versions/<minecraft>/build/libs/`; use the JAR without `-sources`. Install the JAR for your exact Minecraft version on the **client**, along with Fabric Loader and Fabric API. A server-side installation is unnecessary.
 
 These are development candidates. The existing Modrinth 1.0.3 release stays published while the replacement is tested in live clients. The repository's [LICENSE](LICENSE) is CC0-1.0; the Modrinth page currently says MIT and needs an owner review before a new upload.
+
+The 1.21.11 live check used the packaged JAR with SHA-512 prefix `23b97050c12c` against Paper 1.21.11 build 132 in a private offline-mode server. The exact artifact, logs, screenshot, and result receipt are retained in the parent workspace under `testing/customgive/live-1.21.11-2026-10-01/`. This checks the Creative inventory transfer and persistence on that server; it does not establish compatibility for untested Minecraft releases or authenticated multiplayer sessions.

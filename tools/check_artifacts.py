@@ -37,6 +37,8 @@ def check_jar(version: str, class_major: int) -> str:
             raise AssertionError(f"{jar}: missing license")
         if any("template" in name.lower() or "examplemod" in name.lower() for name in names):
             raise AssertionError(f"{jar}: template content remains")
+        if any("/test/" in name or "LiveTest" in name for name in names):
+            raise AssertionError(f"{jar}: private live-test code entered the release JAR")
         classes = [name for name in names if name.endswith(".class")]
         if not classes:
             raise AssertionError(f"{jar}: no classes")

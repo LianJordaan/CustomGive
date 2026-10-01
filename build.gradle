@@ -62,4 +62,63 @@ configure(subprojects.findAll { rootProject.versionMatrix.containsKey(it.name) }
     jar.from(rootProject.file('LICENSE')) {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
+
+    if (project.hasProperty('customgiveLiveTest') &&
+            project.name in ['mc1_20_1', 'mc1_20_2', 'mc1_21_11', 'mc26_2', 'mc26_3']) {
+        def legacyLiveTest = project.name in ['mc1_20_1', 'mc1_20_2']
+        fabricApi {
+            configureTests {
+                createSourceSet = true
+                modId = 'customgive-live-test'
+                enableGameTests = false
+                enableClientGameTests = !legacyLiveTest
+            }
+        }
+        sourceSets.gametest.java.setSrcDirs([rootProject.file(
+                legacyLiveTest ? 'src/legacyLiveTest/java' :
+                project.name == 'mc1_21_11' ? 'src/yarnGameTest/java' : 'src/mojangGameTest/java')])
+        sourceSets.gametest.resources.setSrcDirs([rootProject.file(
+                legacyLiveTest ? 'src/legacyLiveTest/resources' : 'src/liveTest/resources')])
+        dependencies {
+            productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${target.fabricApi}"
+        }
+        def liveTestJar = tasks.register('liveTestJar', Jar) {
+            from(sourceSets.gametest.output)
+            archiveBaseName = 'customgive-private-client-test'
+            archiveVersion = '1.0.0'
+            archiveClassifier = target.yarn == null ? '' : 'dev'
+            destinationDirectory = layout.buildDirectory.dir('private')
+        }
+        def liveTestRuntimeJar = liveTestJar
+        if (target.yarn != null) {
+            liveTestRuntimeJar = tasks.register('remapLiveTestJar', net.fabricmc.loom.task.RemapJarTask) {
+                dependsOn liveTestJar
+                inputFile.set(liveTestJar.flatMap { it.archiveFile })
+                archiveBaseName = 'customgive-private-client-test'
+                archiveVersion = '1.0.0'
+                archiveClassifier = ''
+                destinationDirectory = layout.buildDirectory.dir('private')
+            }
+        }
+        tasks.register('runProductionClientGameTest', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+            if (!legacyLiveTest) {
+                jvmArgs.add('-Dfabric.client.gametest')
+                jvmArgs.add('-Dfabric.client.gametest.disableNetworkSynchronizer=true')
+            }
+            jvmArgs.add("-Dcustomgive.test.address=${project.findProperty('customgiveTestAddress') ?: '127.0.0.1:27210'}")
+            jvmArgs.add("-Dcustomgive.test.phase=${project.findProperty('customgiveTestPhase') ?: 'creative'}")
+            jvmArgs.add("-Dcustomgive.test.expected_sha512=${project.findProperty('customgiveTestJarSha512') ?: ''}")
+            jvmArgs.add("-Dcustomgive.test.minecraft=${target.minecraft}")
+            programArgs.addAll(['--username', project.findProperty('customgiveTestUsername') ?: 'CgProbe'])
+            if (project.name == 'mc26_3') {
+                programArgs.addAll(['--graphicsBackend', 'vulkan'])
+            }
+            if (legacyLiveTest) {
+                def address = (project.findProperty('customgiveTestAddress') ?: '127.0.0.1:27210').split(':')
+                programArgs.addAll(['--server', address[0], '--port', address[1]])
+            }
+            runDir = file(project.findProperty('customgiveTestRunDir') ?: 'build/live-client')
+            mods.from(liveTestRuntimeJar)
+        }
+    }
 }

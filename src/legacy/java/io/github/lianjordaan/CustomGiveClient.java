@@ -1,11 +1,11 @@
 package io.github.lianjordaan;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.command.CommandSource;
@@ -23,12 +23,12 @@ public final class CustomGiveClient implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             var command = ClientCommandManager.literal("customgive")
                     .executes(context -> give(null, 1));
-            var item = ClientCommandManager.argument("item", StringArgumentType.word())
+            var item = ClientCommandManager.argument("item", IdentifierArgumentType.identifier())
                     .suggests((context, builder) -> CommandSource.suggestIdentifiers(Registries.ITEM.getIds(), builder))
-                    .executes(context -> give(StringArgumentType.getString(context, "item"), 1));
+                    .executes(context -> give(context.getArgument("item", Identifier.class).toString(), 1));
             item.then(ClientCommandManager.argument("amount", IntegerArgumentType.integer(1, 64))
                     .executes(context -> give(
-                            StringArgumentType.getString(context, "item"),
+                            context.getArgument("item", Identifier.class).toString(),
                             IntegerArgumentType.getInteger(context, "amount"))));
             command.then(item);
             dispatcher.register(command);
@@ -87,9 +87,10 @@ public final class CustomGiveClient implements ClientModInitializer {
             message(player, "That item can stack to at most " + stack.getMaxCount() + ".");
             return 0;
         }
-        // A creative-inventory packet is handled by the server; changing only the
-        // client inventory would create a ghost item and bypass server authority.
+        // The server handles the Creative packet. Vanilla's Creative UI also
+        // mirrors the slot locally because the server may suppress the echo.
         client.interactionManager.clickCreativeStack(stack, GiveRequest.creativeSlot(emptySlot));
+        player.getInventory().setStack(emptySlot, stack.copy());
         message(player, "Sent " + request.amount() + " " + id + " with clipboard NBT to the server.");
         return 1;
     }

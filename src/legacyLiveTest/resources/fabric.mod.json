@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "customgive-live-test",
+  "version": "1.0.0",
+  "name": "CustomGive private live test",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["io.github.lianjordaan.test.CustomGiveLegacyLiveTest"]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": "*"
+  }
+}

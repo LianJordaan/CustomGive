@@ -2,6 +2,10 @@
 
 The Gradle matrix compiles each exact-version JAR and runs the SNBT/component codec and input tests. A successful build does not establish that the client command and the server inventory handshake work in play.
 
+The private client harness is enabled only with `-PcustomgiveLiveTest`. Its `runProductionClientGameTest` task loads the packaged CustomGive JAR and a separate test mod, verifies the production JAR's SHA-512 at runtime, and joins an app-managed server. Use a fresh run directory and an empty inventory for each version. The `creative` phase exercises the no-argument stone and a namespaced diamond with clipboard data; the `verify_survival` phase reconnects with the same username, checks persistence, and verifies denial after the server console changes that player to Survival. On 1.20.1/1.20.2 the test mod uses client ticks; on newer targets it uses Fabric's client game-test API. Minecraft 26.3 uses the `--graphicsBackend vulkan` client option in this private run because this Windows host crashes during OpenGL resource reload.
+
+From this repository, run `./gradlew :mc1_21_11:runProductionClientGameTest -PcustomgiveLiveTest -PcustomgiveTestAddress=127.0.0.1:27213 -PcustomgiveTestRunDir=build/live-client-creative -PcustomgiveTestUsername=CgProbe -PcustomgiveTestPhase=creative -PcustomgiveTestJarSha512=<full hash>` for a representative Creative phase. Rerun with a new directory and `-PcustomgiveTestPhase=verify_survival`; in the parent workspace, `python tools/switch_when_joined.py <server-id> CgProbe <new-run-directory>/logs/latest.log` can issue the console switch as soon as the client joins. Check the process exit code as well as the `CUSTOMGIVE_LIVE ... PASS` marker. The test mod never enters the production JAR.
+
 For each version in the [matrix](versions.json), install its exact JAR and matching Fabric API on a Fabric client, then test against an ordinary server without CustomGive installed:
 
 1. In Creative mode with a free inventory slot, copy `{}` and use `/customgive`. Confirm exactly one stone appears in the first empty slot and remains there after closing and reopening inventory.

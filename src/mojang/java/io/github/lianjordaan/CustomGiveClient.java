@@ -1,11 +1,11 @@
 package io.github.lianjordaan;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -23,13 +23,13 @@ public final class CustomGiveClient implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             var command = ClientCommands.literal("customgive")
                     .executes(context -> give(null, 1));
-            var item = ClientCommands.argument("item", StringArgumentType.word())
+            var item = ClientCommands.argument("item", IdentifierArgument.id())
                     .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(
                             BuiltInRegistries.ITEM.keySet(), builder))
-                    .executes(context -> give(StringArgumentType.getString(context, "item"), 1));
+                    .executes(context -> give(context.getArgument("item", Identifier.class).toString(), 1));
             item.then(ClientCommands.argument("amount", IntegerArgumentType.integer(1, 64))
                     .executes(context -> give(
-                            StringArgumentType.getString(context, "item"),
+                            context.getArgument("item", Identifier.class).toString(),
                             IntegerArgumentType.getInteger(context, "amount"))));
             command.then(item);
             dispatcher.register(command);
@@ -94,6 +94,9 @@ public final class CustomGiveClient implements ClientModInitializer {
             return 0;
         }
         client.gameMode.handleCreativeModeItemAdd(stack, GiveRequest.creativeSlot(emptySlot));
+        // Vanilla's Creative screen also updates the local slot. The server records
+        // the packet but does not echo it back when it assumes that update happened.
+        player.getInventory().setItem(emptySlot, stack.copy());
         message(player, "Sent " + request.amount() + " " + id + " with clipboard components to the server.");
         return 1;
     }
