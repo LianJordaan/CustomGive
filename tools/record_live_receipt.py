@@ -73,6 +73,15 @@ def main() -> None:
         metadata = json.loads(jar.read("fabric.mod.json"))
     if metadata["depends"]["minecraft"] != args.version:
         raise ValueError("Packaged Minecraft dependency is not exact")
+    manifest_path = WORKSPACE / "testing" / "customgive" / "candidates" / \
+        "manifest-1.1.0.json"
+    if metadata["version"] == "1.1.0":
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        pinned = manifest["minecraft_versions"][args.version]
+        if pinned["sha512"] != sha or \
+                (WORKSPACE / pinned["path"]).resolve() != candidate or \
+                manifest["source_commit"] != args.source_revision:
+            raise ValueError("Candidate hash/path/source differ from release manifest")
 
     manager = ServerManager()
     server = next((row for row in manager.list() if row["id"] == args.server_id), None)
@@ -97,6 +106,9 @@ def main() -> None:
         "production_sha512": sha,
         "production_mod_version": metadata["version"],
         "source_revision": args.source_revision,
+        "production_source_commit": args.source_revision,
+        "candidate_manifest": str(manifest_path.relative_to(WORKSPACE)).replace(
+            "\\", "/") if metadata["version"] == "1.1.0" else None,
         "source_provenance_note": "Source revision records the candidate source state; "
             "the runtime SHA-512 is the exact artifact verified by this test.",
         "client": {
