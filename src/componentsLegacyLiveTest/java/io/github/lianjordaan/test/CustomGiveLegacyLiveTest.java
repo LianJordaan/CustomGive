@@ -8,6 +8,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 
@@ -69,17 +70,19 @@ public final class CustomGiveLegacyLiveTest implements ClientModInitializer {
             if (!stone.isOf(Items.STONE) || stone.getCount() != 1) {
                 throw new AssertionError("No-argument stone was missing after server sync: " + stone);
             }
-            client.keyboard.setClipboard("{CustomModelData:7}");
+            client.keyboard.setClipboard("{\"minecraft:custom_data\":{customgive_test:1b}}");
             client.player.networkHandler.sendChatCommand("customgive minecraft:diamond 2");
             actionAt = ticks;
             step = 2;
         } else if (step == 2 && ticks - actionAt >= 40) {
             ItemStack diamond = client.player.getInventory().getStack(1);
             if (!diamond.isOf(Items.DIAMOND) || diamond.getCount() != 2 ||
-                    diamond.getNbt() == null || diamond.getNbt().getInt("CustomModelData") != 7) {
-                throw new AssertionError("Namespaced diamond and clipboard NBT were not kept: " + diamond);
+                    diamond.get(DataComponentTypes.CUSTOM_DATA) == null ||
+                    diamond.get(DataComponentTypes.CUSTOM_DATA).copyNbt()
+                            .getByte("customgive_test") != 1) {
+                throw new AssertionError("Namespaced diamond and clipboard components were not kept: " + diamond);
             }
-            System.out.println("CUSTOMGIVE_LIVE creative PASS: stone 1 and NBT diamond 2 survived server sync");
+            System.out.println("CUSTOMGIVE_LIVE creative PASS: stone 1 and custom-data diamond 2 survived server sync");
             client.disconnect();
             client.scheduleStop();
             step = 3;

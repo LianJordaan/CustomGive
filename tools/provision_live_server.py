@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -15,7 +16,7 @@ from dashboard.servers.manager import ServerManager, server_settings  # noqa: E4
 from dashboard.services.modrinth import get_json  # noqa: E402
 
 
-def main(version: str) -> None:
+def main(version: str, loader: str) -> None:
     manager = ServerManager()
     config = server_settings()
     if not config.get("eula_accepted"):
@@ -26,24 +27,27 @@ def main(version: str) -> None:
            row["name"].startswith("CustomGive live") for row in existing):
         raise RuntimeError(f"A CustomGive {version} instance already exists")
     catalog = load_catalog()
-    runtime = runtime_for(catalog, "PAPER", version, allow_experimental=True)
+    runtime = runtime_for(catalog, loader, version, allow_experimental=True)
     operator = get_json("https://api.minecraftservices.com/minecraft/profile/lookup/name/" +
                         config["operator"])
     record = manager.transport.call(
-        "create", name=f"CustomGive live {version}", loader="PAPER", version=version,
+        "create", name=f"CustomGive live {version}", loader=loader, version=version,
         memory_gb=4, cpus=4, operator=operator, artifacts=[], eula_accepted=True,
         connection_mode="standalone_offline", unattended_testing=True,
         bind_ip="127.0.0.1", join_host="127.0.0.1", first_port=27210, last_port=27230,
         **runtime,
     )
     print(json.dumps({"created": record["id"], "port": record["port"],
-                      "version": version, "paper_build": record.get("paper_build"),
+                      "version": version, "loader": loader,
+                      "paper_build": record.get("paper_build"),
                       "build_channel": record.get("build_channel"), "java": record["java"]}))
     manager.action("start", record["id"])
     print(json.dumps({"started": record["id"], "port": record["port"]}))
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: provision_live_server.py <minecraft-version>")
-    main(sys.argv[1])
+    args = argparse.ArgumentParser(description=__doc__)
+    args.add_argument("minecraft_version")
+    args.add_argument("--loader", choices=["PAPER", "VANILLA"], default="PAPER")
+    parsed = args.parse_args()
+    main(parsed.minecraft_version, parsed.loader)

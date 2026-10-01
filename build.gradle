@@ -63,22 +63,24 @@ configure(subprojects.findAll { rootProject.versionMatrix.containsKey(it.name) }
         rename { "${it}_${project.base.archivesName.get()}" }
     }
 
-    if (project.hasProperty('customgiveLiveTest') &&
-            project.name in ['mc1_20_1', 'mc1_20_2', 'mc1_21_11', 'mc26_2', 'mc26_3']) {
-        def legacyLiveTest = project.name in ['mc1_20_1', 'mc1_20_2']
+    if (project.hasProperty('customgiveLiveTest')) {
+        def tickLiveTest = target.source in ['legacy', 'componentsLegacy']
         fabricApi {
             configureTests {
                 createSourceSet = true
                 modId = 'customgive-live-test'
                 enableGameTests = false
-                enableClientGameTests = !legacyLiveTest
+                enableClientGameTests = !tickLiveTest
             }
         }
-        sourceSets.gametest.java.setSrcDirs([rootProject.file(
-                legacyLiveTest ? 'src/legacyLiveTest/java' :
-                project.name == 'mc1_21_11' ? 'src/yarnGameTest/java' : 'src/mojangGameTest/java')])
+        def liveSources = [rootProject.file(
+                target.source == 'legacy' ? 'src/legacyLiveTest/java' :
+                target.source == 'componentsLegacy' ? 'src/componentsLegacyLiveTest/java' :
+                target.yarn != null ? 'src/yarnGameTest/java' : 'src/mojangGameTest/java')]
+        if (tickLiveTest) liveSources.add(rootProject.file('src/liveTestCommon/java'))
+        sourceSets.gametest.java.setSrcDirs(liveSources)
         sourceSets.gametest.resources.setSrcDirs([rootProject.file(
-                legacyLiveTest ? 'src/legacyLiveTest/resources' : 'src/liveTest/resources')])
+                tickLiveTest ? 'src/legacyLiveTest/resources' : 'src/liveTest/resources')])
         dependencies {
             productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${target.fabricApi}"
         }
@@ -101,7 +103,7 @@ configure(subprojects.findAll { rootProject.versionMatrix.containsKey(it.name) }
             }
         }
         tasks.register('runProductionClientGameTest', net.fabricmc.loom.task.prod.ClientProductionRunTask) {
-            if (!legacyLiveTest) {
+            if (!tickLiveTest) {
                 jvmArgs.add('-Dfabric.client.gametest')
                 jvmArgs.add('-Dfabric.client.gametest.disableNetworkSynchronizer=true')
             }
@@ -112,10 +114,6 @@ configure(subprojects.findAll { rootProject.versionMatrix.containsKey(it.name) }
             programArgs.addAll(['--username', project.findProperty('customgiveTestUsername') ?: 'CgProbe'])
             if (project.name == 'mc26_3') {
                 programArgs.addAll(['--graphicsBackend', 'vulkan'])
-            }
-            if (legacyLiveTest) {
-                def address = (project.findProperty('customgiveTestAddress') ?: '127.0.0.1:27210').split(':')
-                programArgs.addAll(['--server', address[0], '--port', address[1]])
             }
             runDir = file(project.findProperty('customgiveTestRunDir') ?: 'build/live-client')
             mods.from(liveTestRuntimeJar)
