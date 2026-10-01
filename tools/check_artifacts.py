@@ -1,4 +1,4 @@
-"""Validate the five deployable Fabric JARs after ``gradlew build``."""
+"""Validate every deployable Fabric JAR for the configured release version."""
 
 from __future__ import annotations
 
@@ -10,6 +10,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MOD_VERSION = next(line.split("=", 1)[1].strip() for line in
+                   (ROOT / "gradle.properties").read_text(encoding="utf-8").splitlines()
+                   if line.startswith("mod_version="))
 TARGETS = {
     target["minecraft"]: target["java"] + 44
     for target in json.loads((ROOT / "versions.json").read_text(encoding="utf-8")).values()
@@ -17,16 +20,17 @@ TARGETS = {
 
 
 def check_jar(version: str, class_major: int) -> str:
-    jars = list((ROOT / "versions" / version / "build" / "libs").glob("*.jar"))
-    jars = [jar for jar in jars if not jar.name.endswith("-sources.jar")]
-    if len(jars) != 1:
-        raise AssertionError(f"{version}: expected exactly one deployable JAR, got {jars}")
-    jar = jars[0]
+    jar = ROOT / "versions" / version / "build" / "libs" / \
+        f"CustomGive-fabric-{version}-{MOD_VERSION}.jar"
+    if not jar.is_file():
+        raise AssertionError(f"{version}: missing release JAR {jar}")
     with zipfile.ZipFile(jar) as archive:
         names = set(archive.namelist())
         metadata = json.loads(archive.read("fabric.mod.json"))
         if metadata["id"] != "lian-customgive":
             raise AssertionError(f"{jar}: wrong mod ID")
+        if metadata["version"] != MOD_VERSION:
+            raise AssertionError(f"{jar}: wrong mod version")
         if metadata["depends"]["minecraft"] != version:
             raise AssertionError(f"{jar}: wrong Minecraft dependency")
         if metadata["environment"] != "client":
