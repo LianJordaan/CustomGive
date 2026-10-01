@@ -1,91 +1,65 @@
 plugins {
-	id 'fabric-loom' version '1.3-SNAPSHOT'
-	id 'maven-publish'
+    id 'base'
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
+    id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
 }
 
-version = project.mod_version
-group = project.maven_group
+ext.versionMatrix = new groovy.json.JsonSlurper().parse(file('versions.json'))
 
-base {
-	archivesName = project.archives_base_name
-}
+configure(subprojects.findAll { rootProject.versionMatrix.containsKey(it.name) }) {
+    apply plugin: 'java'
+    def target = rootProject.versionMatrix[project.name]
+    apply plugin: target.yarn == null ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 
-repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
-}
+    version = rootProject.mod_version
+    group = rootProject.maven_group
+    base.archivesName = "CustomGive-fabric-${target.minecraft}"
 
-loom {
-    splitEnvironmentSourceSets()
+    sourceSets.main.java.setSrcDirs([
+        rootProject.file('src/main/java'),
+        rootProject.file("src/${target.source}/java")
+    ])
+    sourceSets.main.resources.setSrcDirs([rootProject.file('src/main/resources')])
+    sourceSets.test.java.setSrcDirs([
+        rootProject.file('src/test/java'),
+        rootProject.file("src/${target.source}Test/java")
+    ])
 
-	mods {
-		"template-mod" {
-			sourceSet sourceSets.main
-			sourceSet sourceSets.client
-		}
-	}
+    dependencies {
+        minecraft "com.mojang:minecraft:${target.minecraft}"
+        if (target.yarn != null) {
+            mappings "net.fabricmc:yarn:${target.yarn}:v2"
+            modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+            modImplementation "net.fabricmc.fabric-api:fabric-api:${target.fabricApi}"
+        } else {
+            implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+            implementation "net.fabricmc.fabric-api:fabric-api:${target.fabricApi}"
+        }
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+        testImplementation "net.fabricmc:fabric-loader-junit:${rootProject.fabric_loader_version}"
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
 
-}
+    processResources {
+        inputs.property 'version', project.version
+        inputs.property 'minecraft_version', target.minecraft
+        inputs.property 'java_version', target.java
+        filesMatching('fabric.mod.json') {
+            expand(version: project.version, minecraft_version: target.minecraft,
+                   java_version: target.java)
+        }
+    }
 
-dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-	// Uncomment the following line to enable the deprecated Fabric API modules. 
-	// These are included in the Fabric API production distribution and allow you to update your mod to the latest modules at a later more convenient time.
-
-	// modImplementation "net.fabricmc.fabric-api:fabric-api-deprecated:${project.fabric_version}"
-}
-
-processResources {
-	inputs.property "version", project.version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
-	}
-}
-
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
-}
-
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
-}
-
-jar {
-	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
-	}
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			from components.java
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = target.java
+    }
+    java {
+        sourceCompatibility = JavaVersion.toVersion(target.java)
+        targetCompatibility = JavaVersion.toVersion(target.java)
+    }
+    test.useJUnitPlatform()
+    jar.from(rootProject.file('LICENSE')) {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
 }

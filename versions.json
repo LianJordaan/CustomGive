@@ -1,0 +1,7 @@
+{
+  "mc1_20_1": {"minecraft": "1.20.1", "yarn": "1.20.1+build.9", "fabricApi": "0.92.9+1.20.1", "java": 17, "source": "legacy"},
+  "mc1_20_2": {"minecraft": "1.20.2", "yarn": "1.20.2+build.4", "fabricApi": "0.91.6+1.20.2", "java": 17, "source": "legacy"},
+  "mc1_21_11": {"minecraft": "1.21.11", "yarn": "1.21.11+build.6", "fabricApi": "0.141.4+1.21.11", "java": 21, "source": "modern"},
+  "mc26_2": {"minecraft": "26.2", "yarn": null, "fabricApi": "0.161.0+26.2", "java": 25, "source": "mojang"},
+  "mc26_3": {"minecraft": "26.3", "yarn": null, "fabricApi": "0.161.0+26.3", "java": 25, "source": "mojang"}
+}

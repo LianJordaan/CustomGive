@@ -2,38 +2,26 @@
 	"schemaVersion": 1,
 	"id": "lian-customgive",
 	"version": "${version}",
-	"name": "Custom Command Item Giver",
-	"description": "This mod will add a `/customgive` command that will give you a stone block with the NBT that is copied to your clipboard.",
+	"name": "CustomGive",
+	"description": "Give yourself a Creative-mode item with SNBT copied from your clipboard.",
 	"authors": [
 		"LianJordaan"
 	],
 	"contact": {
-		"homepage": "https://github.com/LianJordaan",
 		"sources": "https://github.com/LianJordaan/CustomGive",
 		"issues": "https://github.com/LianJordaan/CustomGive/issues"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/template-mod/icon.png",
-	"environment": "*",
+	"environment": "client",
 	"entrypoints": {
-		"main": [
-			"io.github.lianjordaan.ExampleMod"
-		],
 		"client": [
-			"io.github.lianjordaan.ExampleModClient"
+			"io.github.lianjordaan.CustomGiveClient"
 		]
 	},
-	"mixins": [
-		"template-mod.mixins.json",
-		{
-			"config": "template-mod.client.mixins.json",
-			"environment": "client"
-		}
-	],
 	"depends": {
-		"fabricloader": ">=0.14.21",
-		"minecraft": "~1.20.1",
-		"java": ">=17",
+		"fabricloader": ">=0.19.5",
+    "minecraft": "${minecraft_version}",
+    "java": ">=${java_version}",
 		"fabric-api": "*"
 	}
 }
