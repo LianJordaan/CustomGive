@@ -11,6 +11,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.text.Text;
 
 /** Test-only tick state machine for older Fabric releases without client game tests. */
 public final class CustomGiveLegacyLiveTest implements ClientModInitializer {
@@ -38,6 +39,25 @@ public final class CustomGiveLegacyLiveTest implements ClientModInitializer {
                 System.out.println("CUSTOMGIVE_LIVE launch screen=" +
                         (client.currentScreen == null ? "none" : client.currentScreen.getClass().getName()));
                 LiveConnect.connect(client);
+            } else if (connecting && ticks % 100 == 0) {
+                System.out.println("CUSTOMGIVE_LIVE connection screen=" +
+                        (client.currentScreen == null ? "none" : client.currentScreen.getClass().getName()) +
+                        " title=" + (client.currentScreen == null ? "" :
+                                client.currentScreen.getTitle().getString()));
+                if (client.currentScreen != null) {
+                    for (var field : client.currentScreen.getClass().getDeclaredFields()) {
+                        if (!Text.class.isAssignableFrom(field.getType())) continue;
+                        try {
+                            field.setAccessible(true);
+                            Text value = (Text) field.get(client.currentScreen);
+                            if (value != null) {
+                                System.out.println("CUSTOMGIVE_LIVE screen text=" + value.getString());
+                            }
+                        } catch (ReflectiveOperationException ignored) {
+                            // Screen fields are only diagnostic for the private test.
+                        }
+                    }
+                }
             }
             return;
         }

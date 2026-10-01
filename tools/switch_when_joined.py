@@ -26,19 +26,28 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=180)
     args = parser.parse_args()
 
+    manager = ServerManager()
     deadline = time.monotonic() + args.timeout
     join_line = f"{args.username} joined the game"
     while time.monotonic() < deadline:
+        joined = False
         if args.client_log.is_file():
             contents = args.client_log.read_text(encoding="utf-8", errors="replace")
             if join_line in contents:
-                result = ServerManager().console(
-                    args.instance_id, f"gamemode survival {args.username}"
-                )
-                if "Survival" not in str(result):
-                    raise RuntimeError(f"Server did not confirm Survival mode: {result}")
-                print(f"{args.username}: {result}")
-                return
+                joined = True
+        if not joined:
+            # Newer clients can omit their own join announcement from chat.
+            # The server's online-player list is authoritative for the switch.
+            listing = str(manager.console(args.instance_id, "list"))
+            joined = args.username in [name.strip() for name in
+                                      listing.partition(":")[2].split(",")]
+        if joined:
+            result = manager.console(args.instance_id,
+                                     f"gamemode survival {args.username}")
+            if "Survival" not in str(result):
+                raise RuntimeError(f"Server did not confirm Survival mode: {result}")
+            print(f"{args.username}: {result}")
+            return
         time.sleep(0.5)
     raise TimeoutError(f"Client did not join within {args.timeout}s: {args.client_log}")
 

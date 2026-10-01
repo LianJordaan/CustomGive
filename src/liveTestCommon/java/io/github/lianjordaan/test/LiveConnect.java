@@ -3,7 +3,6 @@ package io.github.lianjordaan.test;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Map;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
@@ -41,7 +40,10 @@ final class LiveConnect {
                 args[3] = server;
                 args[4] = false;
                 if (types.length == 6) {
-                    args[5] = types[5].getConstructor(Map.class).newInstance(Map.of());
+                    // CookieStorage is only supplied for a transfer from another server.
+                    // A fresh direct connection must pass null or Minecraft reports a
+                    // misleading transfer failure when the socket cannot be opened.
+                    args[5] = null;
                 }
                 method.invoke(null, args);
                 System.out.println("CUSTOMGIVE_LIVE connecting to " + address);
