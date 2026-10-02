@@ -48,4 +48,6 @@ The pinned Fabric API, mappings, Java level, and source track for each target ar
 
 Build on JDK 25 with `./gradlew build` (or `gradlew.bat build` on Windows). The deployable JARs are in `versions/<minecraft>/build/libs/`; use the JAR without `-sources`. Install the JAR for your exact Minecraft version on the **client**, along with Fabric Loader and Fabric API. Server-side installation is unnecessary.
 
-The existing Modrinth 1.0.3 release remains available while the 1.1.0 page metadata and uploads are prepared. This repository's [LICENSE](LICENSE) is CC0-1.0; the Modrinth page must show that license and an accurate AI code/text disclosure before publication.
+LianJordaan created and coded CustomGive in 2023 and wrote or substantially revised code in the current 1.1.0 release. The compatibility ports, revised command, tests, documentation, and Modrinth page text also received substantial generative-AI contributions. The Modrinth page carries the corresponding code and text disclosure.
+
+The existing Modrinth 1.0.3 release remains available. All 23 tested 1.1.0 Fabric versions are publicly listed on Modrinth, each with its own exact JAR. This repository's [LICENSE](LICENSE) is CC0-1.0, matching the Modrinth page.
